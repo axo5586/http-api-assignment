@@ -1,79 +1,141 @@
-// Note this object is purely in memory
-// When node shuts down this will be cleared.
-// Same when your heroku app shuts down from inactivity
-// We will be working with databases in the next few weeks.
-const users = {};
-
-//function to respond with a json object
-//takes request, response, status code and object to send
+// function to send a json object
 const respondJSON = (request, response, status, object) => {
+  // set status code and content type (application/json)
   response.writeHead(status, { 'Content-Type': 'application/json' });
+  // stringify the object (so it doesn't use references/pointers/etc)
+  // but is instead a flat string object.
+  // Then write it to the response.
   response.write(JSON.stringify(object));
+  // Send the response to the client
   response.end();
 };
 
-//function to respond without json body
-//takes request, response and status code
-const respondJSONMeta = (request, response, status) => {
-  response.writeHead(status, { 'Content-Type': 'application/json' });
-  response.end();
-};
-
-//return user object as JSON
-const getUsers = (request, response) => {
+// function to show a success status code
+const success = (request, response) => {
+  // message to send
   const responseJSON = {
-    users,
+    message: 'This is a successful response',
   };
 
+  // send our json with a success status code
   respondJSON(request, response, 200, responseJSON);
 };
 
-//function to add a user from a POST body
-const addUser = (request, response, body) => {
-  //default json message
+// function to show a bad request without the correct parameters
+const badRequest = (request, response, params) => {
+  // message to send
   const responseJSON = {
-    message: 'Name and age are both required.',
+    message: 'This request has the required parameters',
   };
 
-  //check to make sure we have both fields
-  //We might want more validation than just checking if they exist
-  //This could easily be abused with invalid types (such as booleans, numbers, etc)
-  //If either are missing, send back an error message as a 400 badRequest
-  if (!body.name || !body.age) {
-    responseJSON.id = 'missingParams';
+  // if the request does not contain a valid=true query parameter
+  if (!params.valid || params.valid !== 'true') {
+    // set our error message
+    responseJSON.message = 'Missing valid query parameter set to true';
+
+    // give the error a consistent id
+    responseJSON.id = 'badRequest';
+
+    // return our json with a 400 bad request code
     return respondJSON(request, response, 400, responseJSON);
   }
+  if (params.valid === 'true') {
+    // set our error message
+    responseJSON.message = 'This request has the required parameters';
 
-  //default status code to 201 created
-  let responseCode = 201;
-
-  //if that user's name already exists in our object
-  //then switch to a 204 updated status
-  if (users[body.name]) {
-    responseCode = 204;
-  } else {
-    //otherwise create an object with that name
-    users[body.name] = {};
+    return respondJSON(request, response, 200, responseJSON);
   }
 
-  //add or update fields for this user name
-  users[body.name].name = body.name;
-  users[body.name].age = body.age;
-
-  //if response is created, then set our created message
-  //and sent response with a message
-  if (responseCode === 201) {
-    responseJSON.message = 'Created Successfully';
-    return respondJSON(request, response, responseCode, responseJSON);
-  }
-  // 204 has an empty payload, just a success
-  // It cannot have a body, so we just send a 204 without a message
-  // 204 will not alter the browser in any way!!!
-  return respondJSONMeta(request, response, responseCode);
+  // if the parameter is here, send json with a success status code
+  return respondJSON(request, response, 200, responseJSON);
 };
 
-//public exports
+// function to show an unauthorized error
+const unauthorized = (request, response, params) => {
+  // message to send
+  const responseJSON = {
+    message: 'This request has the required parameters',
+  };
+
+  // if the request does not contain a ?loggedin=yes query parameter
+  if (!params.valid || params.valid !== 'true') {
+    // set our error message
+    responseJSON.message = 'Missing loggedIn query parameter set to true';
+
+    // give the error a consistent id
+    responseJSON.id = 'unauthorized';
+
+    // return our json with a 403 bad request code
+    return respondJSON(request, response, 401, responseJSON);
+  }
+  if (params.valid === 'true') {
+    // set our error message
+    responseJSON.message = 'You have successfully viewed the content.';
+
+    return respondJSON(request, response, 200, responseJSON);
+  }
+
+  // if the parameter is here, send json with a success status code
+  return respondJSON(request, response, 200, responseJSON);
+};
+
+// function to show a forbidden error
+const forbidden = (request, response) => {
+  // message to send
+  const responseJSON = {
+    message: 'You do not have access to this content',
+    id: 'forbidden',
+  };
+
+  // send our json
+  respondJSON(request, response, 403, responseJSON);
+};
+
+// function to show a internal error
+const internal = (request, response) => {
+  // message to send
+  const responseJSON = {
+    message: 'Internal Server Error. Something went wrong.',
+    id: 'internalError',
+  };
+
+  // send our json
+  respondJSON(request, response, 500, responseJSON);
+};
+
+// function to show a not implemented error
+const notImplemented = (request, response) => {
+  // message to send
+  const responseJSON = {
+    message: 'A get request for this page has not been implemented yet. Check again later for updated content.',
+    id: 'notImplemented',
+  };
+
+  // send our json
+  respondJSON(request, response, 501, responseJSON);
+};
+
+// function to show not found error
+const notFound = (request, response) => {
+  // error message with a description and consistent error id
+  const responseJSON = {
+    message: 'The page you are looking for was not found.',
+    id: 'notFound',
+  };
+
+  // return our json with a 404 not found error code
+  respondJSON(request, response, 404, responseJSON);
+};
+
+// exports to set functions to public.
+// In this syntax, you can do getIndex:getIndex, but if they
+// are the same name, you can short handle to just getIndex,
 module.exports = {
-  getUsers,
-  addUser,
+  success,
+  badRequest,
+  unauthorized,
+  forbidden,
+  internal,
+  notImplemented,
+  notFound,
 };
