@@ -60,6 +60,9 @@
         case 501: //not implemented
           content.innerHTML = `<b>Not Implemented</b>`;
           break;
+        default: //not found (requested resource does not exist)
+          content.innerHTML = `<b>Resource Not Found</b>`;
+          break;
         
       }
       
@@ -87,29 +90,49 @@
       xhr.send();
     };
 
+    
+    const identifyURL = () => {
+        const statusDropdown = document.querySelector("#status");
+        const url = statusDropdown.options[statusDropdown.selectedIndex].value;
+        return 'http:/localhost:3000' + url;
+      }
+
 
     //initialization function
     const init = () => {
       
-      const statusDropdown = document.querySelector("#status");
-      let statusValue = statusDropdown.value;
+      const sendButton = document.querySelector('#sendButton');
+      
+      const sendRequest = () => {
+        const statusDropdown = document.querySelector("#status");
+        const url = statusDropdown.options[statusDropdown.selectedIndex].value;
+        sendAjax(url);
+      };
 
-      const typeDropdown = document.querySelector("#type");
-      let typeValue = typeDropdown.value;
+      const handleJSON = () => {
+        window.location = identifyURL();
+      };
 
-      const sendButton = document.querySelector("#sendButton");
-
-      //different functions
-      const handleAjax = (statusValue) => sendAjax(statusValue);
-      if(typeValue === 'JSON')
-      {
-          //add event listener
-          sendButton.addEventListener('click', handleAjax);
+      const identifyType = () => {
+        const typeDropdown = document.querySelector("#type");
+        const type =  typeDropdown.options[typeDropdown.selectedIndex].value;
+        return type;
       }
 
+      const handleRequest = () => {
+        const typeDropdown = document.querySelector("#type");
+        const type =  typeDropdown.options[typeDropdown.selectedIndex].value;
+        if(identifyType() === 'JSON')
+        {
+          handleJSON();
+        }
+        else if(identifyType() === 'XML')
+        {
+          sendRequest();
+        }
+      }
 
-    
-
+      sendButton.addEventListener('click', handleRequest);
     }
     
     window.onload = init;
